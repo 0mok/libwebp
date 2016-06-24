@@ -494,6 +494,28 @@ WEBP_EXTERN(int) WebPAnimEncoderAdd(
     WebPAnimEncoder* enc, struct WebPPicture* frame, int timestamp_ms,
     const struct WebPConfig* config);
 
+// Optimize the given frame for WebP, encode it and add it to the
+// WebPAnimEncoder object.
+// The last call to 'WebPAnimEncoderAdd' should be with frame = NULL, which
+// indicates that no more frames are to be added. This call is also used to
+// determine the duration of the last frame.
+// Parameters:
+//   enc - (in/out) object to which the frame is to be added.
+//   frame - (in/out) frame data in ARGB or YUV(A) format. If it is in YUV(A)
+//           format, it will be converted to ARGB, which incurs a small loss.
+//   timestamp_ms - (in) timestamp of this frame in milliseconds.
+//                       Duration of a frame would be calculated as
+//                       "timestamp of next frame - timestamp of this frame".
+//                       Hence, timestamps should be in non-decreasing order.
+//   config - (in) encoding options; can be passed NULL to pick
+//            reasonable defaults.
+// Returns:
+//   On error, returns false and frame->error_code is set appropriately.
+//   Otherwise, returns true.
+WEBP_EXTERN(int) WebPAnimEncoderAddEx(
+    WebPAnimEncoder* enc, struct WebPPicture* frame, int timestamp_ms,
+    const struct WebPConfig* config, int force_keyframe);
+
 // Assemble all frames added so far into a WebP bitstream.
 // This call should be preceded by  a call to 'WebPAnimEncoderAdd' with
 // frame = NULL; if not, the duration of the last frame will be internally

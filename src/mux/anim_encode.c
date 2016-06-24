@@ -1029,7 +1029,7 @@ static int64_t KeyFramePenalty(const EncodedFrame* const encoded_frame) {
 }
 
 static int CacheFrame(WebPAnimEncoder* const enc,
-                      const WebPConfig* const config) {
+                      const WebPConfig* const config, const int force_keyframe) {
   int ok = 0;
   int frame_skipped = 0;
   WebPEncodingError error_code = VP8_ENC_OK;
@@ -1049,6 +1049,11 @@ static int CacheFrame(WebPAnimEncoder* const enc,
     enc->prev_candidate_undecided_ = 0;
   } else {
     ++enc->count_since_key_frame_;
+    if (force_keyframe) {
+      enc->count_since_key_frame_ = 0;
+      enc->keyframe_ = KEYFRAME_NONE;
+      enc->best_delta_ = DELTA_INFINITY;
+    }
     if (enc->count_since_key_frame_ <= enc->options_.kmin) {
       // Add this as a frame rectangle.
       error_code = SetFrame(enc, config, 0, encoded_frame, &frame_skipped);
@@ -1162,6 +1167,11 @@ static int FlushFrames(WebPAnimEncoder* const enc) {
 
 int WebPAnimEncoderAdd(WebPAnimEncoder* enc, WebPPicture* frame, int timestamp,
                        const WebPConfig* encoder_config) {
+  return WebPAnimEncoderAddEx(enc, frame, timestamp, encoder_config, 0);
+}
+
+int WebPAnimEncoderAddEx(WebPAnimEncoder* enc, WebPPicture* frame, int timestamp,
+                       const WebPConfig* encoder_config, int force_keyframe) {
   WebPConfig config;
 
   if (enc == NULL) {
@@ -1222,7 +1232,7 @@ int WebPAnimEncoderAdd(WebPAnimEncoder* enc, WebPPicture* frame, int timestamp,
   assert(enc->curr_canvas_copy_modified_ == 1);
   CopyCurrentCanvas(enc);
 
-  if (!CacheFrame(enc, &config)) {
+  if (!CacheFrame(enc, &config, force_keyframe)) {
     return 0;
   }
 
